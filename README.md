@@ -36,23 +36,33 @@ Use the command `./build.sh build`. Compiled jars will be placed under `Starligh
 
 ## Sable compatibility (NeoForge 1.21.1)
 
-This fork includes a Sable-specific lighting mixin. Sable creates a separate
-`LevelLightEngine` for each server-side sub-level plot and derives its block-
-and sky-light flags from the parent vanilla engine. ScalableLux replaces those
-vanilla engines and clears their `blockEngine`/`skyEngine` fields, so the
-flags observed by Sable are incorrect. The compatibility mixin reads the
-capabilities from ScalableLux's `StarLightInterface` and passes the correct
-flags when Sable creates a plot light engine.
+Sable's `ServerLevelPlot` creates a separate `LevelLightEngine` and derives
+its block- and sky-light flags from the parent engine's vanilla
+`blockEngine` / `skyEngine` fields. ScalableLux manages lighting through its
+own `StarLightInterface` and clears those vanilla fields, so the values read
+by Sable do not represent the actual lighting capabilities.
 
-**Important:** Sable also declares the mod ID `scalablelux` as incompatible in
-its own `neoforge.mods.toml`. NeoForge rejects the mod combination before
-mixins can run. A dependency-override helper is therefore still required to
-bypass that loader declaration. The lightweight
-[Sable ScalableLux Compat](https://www.curseforge.com/minecraft/mc-mods/sable-scalablelux-compat)
-mod performs this loader-level bypass by writing the official
-`config/fml.toml` dependency override. It does not replace the lighting
-compatibility mixin included in this fork.
+The Sable compatibility mixin redirects that constructor call and obtains the
+real block- and sky-light capabilities from ScalableLux's
+`StarLightInterface`. It is a no-op when the parent engine is not provided by
+ScalableLux, and the target is optional when Sable is absent.
 
-This integration targets Sable on Minecraft 1.21.1 / NeoForge. It needs
-in-game testing with the exact Sable and NeoForge versions in use; successful
-compilation alone does not establish full compatibility.
+### NeoForge dependency override
+
+Sable currently declares ScalableLux as an incompatible mod in its
+`neoforge.mods.toml`. NeoForge rejects the pair before the compatibility
+mixin can run. To allow the combination, add this to
+`config/fml.toml` in the game instance:
+
+```toml
+[dependencyOverrides]
+sable = ["-scalablelux"]
+```
+
+This only overrides Sable's loader-level incompatibility declaration; it does
+not itself provide runtime compatibility. Keep the ScalableLux compatibility
+mixin enabled as well.
+
+Target: Minecraft 1.21.1 / NeoForge. The integration has been checked against
+Sable's current 1.21.1 source, but still requires a successful local build and
+in-game testing with the exact mod versions in use.
