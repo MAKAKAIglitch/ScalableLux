@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: MAKAKAIglitch <noreply@github.com>
+Date: Sun, 22 Nov 2026 00:00:00 +0000
+Subject: [PATCH] Add Sable NeoForge lighting compatibility
+
+---
+ src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java | 48 +++++++++++++++++++++++
+ src/main/resources/scalablelux.mixins.json | 3 +-
+ 2 files changed, 50 insertions(+), 1 deletion(-)
+ create mode 100644 src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java
+
+diff --git a/src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java b/src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java
+@@ -0,0 +1,48 @@
++package ca.spottedleaf.starlight.mixin.compat.sable;
++
++import ca.spottedleaf.starlight.common.light.StarLightInterface;
++import ca.spottedleaf.starlight.common.light.StarLightLightingProvider;
++import net.minecraft.world.level.Level;
++import net.minecraft.world.level.chunk.LightChunkGetter;
++import net.minecraft.world.level.lighting.LevelLightEngine;
++import org.spongepowered.asm.mixin.Mixin;
++import org.spongepowered.asm.mixin.Pseudo;
++import org.spongepowered.asm.mixin.injection.At;
++import org.spongepowered.asm.mixin.injection.Redirect;
++
++/**
++ * Keeps Sable sub-level plots aware of the real light capabilities when
++ * ScalableLux replaces the vanilla light engines.
++ *
++ * ScalableLux intentionally clears LevelLightEngine.blockEngine and
++ * skyEngine. Sable previously inspected those vanilla fields when creating
++ * a plot, which made every plot believe that both light layers were absent.
++ */
++@Pseudo
++@Mixin(targets = "dev.ryanhcode.sable.sublevel.plot.ServerLevelPlot", remap = false)
++public abstract class ServerLevelPlotMixin {
++
++    @Redirect(
++        method = "<init>",
++        at = @At(
++            value = "NEW",
++            target = "net/minecraft/world/level/lighting/LevelLightEngine",
++            remap = false
++        ),
++        remap = false
++    )
++    private LevelLightEngine scalablelux$createPlotLightEngine(
++        LightChunkGetter chunkGetter,
++        boolean hasBlockLight,
++        boolean hasSkyLight
++    ) {
++        Level level = chunkGetter.getLevel();
++        if (level != null) {
++            LevelLightEngine parentEngine = level.getLightEngine();
++            if (parentEngine instanceof StarLightLightingProvider provider) {
++                StarLightInterface starLight = provider.getLightEngine();
++                if (starLight != null) {
++                    hasBlockLight = starLight.hasBlockLight();
++                    hasSkyLight = starLight.hasSkyLight();
++                }
++            }
++        }
++
++        return new LevelLightEngine(chunkGetter, hasBlockLight, hasSkyLight);
++    }
++}
+diff --git a/src/main/resources/scalablelux.mixins.json b/src/main/resources/scalablelux.mixins.json
+index 0000000..2222222 100644
+--- a/src/main/resources/scalablelux.mixins.json
++++ b/src/main/resources/scalablelux.mixins.json
+@@ -4,6 +4,7 @@
+   "compatibilityLevel": "JAVA_17",
+   "mixins": [
++    "compat.sable.ServerLevelPlotMixin",
+     "common.blockstate.BlockStateBaseMixin",
+     "common.chunk.ChunkAccessMixin",
+     "common.chunk.EmptyLevelChunkMixin",
