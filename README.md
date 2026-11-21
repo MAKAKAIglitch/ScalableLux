@@ -32,3 +32,27 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more detailed information.
 
 #### Compiling
 Use the command `./build.sh build`. Compiled jars will be placed under `Starlight-Patched/build/libs/`.
+
+
+## Sable compatibility (NeoForge 1.21.1)
+
+This fork includes a Sable-specific lighting mixin. Sable creates a separate
+`LevelLightEngine` for each server-side sub-level plot and derives its block-
+and sky-light flags from the parent vanilla engine. ScalableLux replaces those
+vanilla engines and clears their `blockEngine`/`skyEngine` fields, so the
+flags observed by Sable are incorrect. The compatibility mixin reads the
+capabilities from ScalableLux's `StarLightInterface` and passes the correct
+flags when Sable creates a plot light engine.
+
+**Important:** Sable also declares the mod ID `scalablelux` as incompatible in
+its own `neoforge.mods.toml`. NeoForge rejects the mod combination before
+mixins can run. A dependency-override helper is therefore still required to
+bypass that loader declaration. The lightweight
+[Sable ScalableLux Compat](https://www.curseforge.com/minecraft/mc-mods/sable-scalablelux-compat)
+mod performs this loader-level bypass by writing the official
+`config/fml.toml` dependency override. It does not replace the lighting
+compatibility mixin included in this fork.
+
+This integration targets Sable on Minecraft 1.21.1 / NeoForge. It needs
+in-game testing with the exact Sable and NeoForge versions in use; successful
+compilation alone does not establish full compatibility.
