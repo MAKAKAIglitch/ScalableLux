@@ -4,9 +4,9 @@ Date: Sun, 22 Nov 2026 00:00:00 +0000
 Subject: [PATCH] Add Sable NeoForge lighting compatibility
 
 ---
- .../mixin/compat/sable/ServerLevelPlotMixin.java | 43 ++++++++++++++++++++++++
+ .../mixin/compat/sable/ServerLevelPlotMixin.java | 47 ++++++++++++++++++++++++
  src/main/resources/scalablelux.mixins.json       |  1 +
- 2 files changed, 44 insertions(+)
+ 2 files changed, 48 insertions(+)
  create mode 100644 src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java
 
 diff --git a/src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java b/src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java
@@ -14,7 +14,7 @@ new file mode 100644
 index 0000000..0000000
 --- /dev/null
 +++ b/src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java
-@@ -0,0 +1,43 @@
+@@ -0,0 +1,47 @@
 +package ca.spottedleaf.starlight.mixin.compat.sable;
 +
 +import ca.spottedleaf.starlight.common.light.StarLightInterface;
@@ -33,6 +33,9 @@ index 0000000..0000000
 + * Sable derives the constructor flags from the vanilla blockEngine/skyEngine
 + * fields. ScalableLux owns the lighting engines separately and clears those
 + * vanilla fields, so the values read by Sable no longer describe the world.
++ *
++ * The compatibility approach is adapted from XSY-Team/fuck-sable (MIT):
++ * https://github.com/XSY-Team/fuck-sable
 + */
 +@Pseudo
 +@Mixin(targets = "dev.ryanhcode.sable.sublevel.plot.ServerLevelPlot", remap = false)
@@ -43,21 +46,23 @@ index 0000000..0000000
 +        at = @At(
 +            value = "NEW",
 +            target = "net/minecraft/world/level/lighting/LevelLightEngine",
-+            remap = true
++            remap = false
 +        ),
-+        remap = true
++        remap = false
 +    )
 +    private LevelLightEngine scalablelux$createPlotLightEngine(
 +        LightChunkGetter chunkGetter,
 +        boolean hasBlockLight,
 +        boolean hasSkyLight
 +    ) {
-+        final Level level = chunkGetter.getLevel();
-+        if (level != null && level.getLightEngine() instanceof StarLightLightingProvider provider) {
-+            final StarLightInterface starLight = provider.getLightEngine();
-+            if (starLight != null) {
-+                hasBlockLight = starLight.hasBlockLight();
-+                hasSkyLight = starLight.hasSkyLight();
++        if (chunkGetter.getLevel() instanceof Level level) {
++            final LevelLightEngine parentEngine = level.getLightEngine();
++            if (parentEngine instanceof StarLightLightingProvider provider) {
++                final StarLightInterface starLight = provider.getLightEngine();
++                if (starLight != null) {
++                    hasBlockLight = starLight.hasBlockLight();
++                    hasSkyLight = starLight.hasSkyLight();
++                }
 +            }
 +        }
 +
