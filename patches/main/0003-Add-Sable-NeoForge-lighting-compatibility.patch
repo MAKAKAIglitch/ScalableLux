@@ -4,17 +4,17 @@ Date: Sun, 22 Nov 2026 00:00:00 +0000
 Subject: [PATCH] Add Sable NeoForge lighting compatibility
 
 ---
- src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java | 48 +++++++++++++++++++++++
- src/main/resources/scalablelux.mixins.json | 3 +-
- 2 files changed, 50 insertions(+), 1 deletion(-)
+ .../mixin/compat/sable/ServerLevelPlotMixin.java | 43 ++++++++++++++++++++++++
+ src/main/resources/scalablelux.mixins.json       |  1 +
+ 2 files changed, 44 insertions(+)
  create mode 100644 src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java
 
 diff --git a/src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java b/src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java
 new file mode 100644
-index 0000000..1111111
+index 0000000..0000000
 --- /dev/null
 +++ b/src/main/java/ca/spottedleaf/starlight/mixin/compat/sable/ServerLevelPlotMixin.java
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,43 @@
 +package ca.spottedleaf.starlight.mixin.compat.sable;
 +
 +import ca.spottedleaf.starlight.common.light.StarLightInterface;
@@ -28,12 +28,11 @@ index 0000000..1111111
 +import org.spongepowered.asm.mixin.injection.Redirect;
 +
 +/**
-+ * Keeps Sable sub-level plots aware of the real light capabilities when
-+ * ScalableLux replaces the vanilla light engines.
++ * Preserves the actual lighting capabilities when Sable creates a plot engine.
 + *
-+ * ScalableLux intentionally clears LevelLightEngine.blockEngine and
-+ * skyEngine. Sable previously inspected those vanilla fields when creating
-+ * a plot, which made every plot believe that both light layers were absent.
++ * Sable derives the constructor flags from the vanilla blockEngine/skyEngine
++ * fields. ScalableLux owns the lighting engines separately and clears those
++ * vanilla fields, so the values read by Sable no longer describe the world.
 + */
 +@Pseudo
 +@Mixin(targets = "dev.ryanhcode.sable.sublevel.plot.ServerLevelPlot", remap = false)
@@ -43,25 +42,20 @@ index 0000000..1111111
 +        method = "<init>",
 +        at = @At(
 +            value = "NEW",
-+            target = "net/minecraft/world/level/lighting/LevelLightEngine",
-+            remap = false
-+        ),
-+        remap = false
++            target = "net.minecraft.world.level.lighting.LevelLightEngine"
++        )
 +    )
 +    private LevelLightEngine scalablelux$createPlotLightEngine(
 +        LightChunkGetter chunkGetter,
 +        boolean hasBlockLight,
 +        boolean hasSkyLight
 +    ) {
-+        Level level = chunkGetter.getLevel();
-+        if (level != null) {
-+            LevelLightEngine parentEngine = level.getLightEngine();
-+            if (parentEngine instanceof StarLightLightingProvider provider) {
-+                StarLightInterface starLight = provider.getLightEngine();
-+                if (starLight != null) {
-+                    hasBlockLight = starLight.hasBlockLight();
-+                    hasSkyLight = starLight.hasSkyLight();
-+                }
++        final Level level = chunkGetter.getLevel();
++        if (level != null && level.getLightEngine() instanceof StarLightLightingProvider provider) {
++            final StarLightInterface starLight = provider.getLightEngine();
++            if (starLight != null) {
++                hasBlockLight = starLight.hasBlockLight();
++                hasSkyLight = starLight.hasSkyLight();
 +            }
 +        }
 +
@@ -69,10 +63,10 @@ index 0000000..1111111
 +    }
 +}
 diff --git a/src/main/resources/scalablelux.mixins.json b/src/main/resources/scalablelux.mixins.json
-index 0000000..2222222 100644
+index f1914fb..0000000 100644
 --- a/src/main/resources/scalablelux.mixins.json
 +++ b/src/main/resources/scalablelux.mixins.json
-@@ -4,6 +4,7 @@
+@@ -5,5 +5,6 @@
    "compatibilityLevel": "JAVA_17",
    "mixins": [
 +    "compat.sable.ServerLevelPlotMixin",
