@@ -42,8 +42,10 @@ index 0000000..0000000
 +        method = "<init>",
 +        at = @At(
 +            value = "NEW",
-+            target = "net.minecraft.world.level.lighting.LevelLightEngine"
-+        )
++            target = "net/minecraft/world/level/lighting/LevelLightEngine",
++            remap = true
++        ),
++        remap = true
 +    )
 +    private LevelLightEngine scalablelux$createPlotLightEngine(
 +        LightChunkGetter chunkGetter,
