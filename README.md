@@ -45,7 +45,9 @@ by Sable do not represent the actual lighting capabilities.
 The Sable compatibility mixin redirects that constructor call and obtains the
 real block- and sky-light capabilities from ScalableLux's
 `StarLightInterface`. It is a no-op when the parent engine is not provided by
-ScalableLux, and the target is optional when Sable is absent.
+ScalableLux, and the target is optional when Sable is absent. The implementation
+is adapted from the proven approach in [XSY-Team/fuck-sable](https://github.com/XSY-Team/fuck-sable)
+(MIT); only the relevant lighting integration was adapted, not its unrelated fixes.
 
 ### NeoForge dependency override
 
@@ -63,6 +65,6 @@ This only overrides Sable's loader-level incompatibility declaration; it does
 not itself provide runtime compatibility. Keep the ScalableLux compatibility
 mixin enabled as well.
 
-Target: Minecraft 1.21.1 / NeoForge. The integration has been checked against
-Sable's current 1.21.1 source, but still requires a successful local build and
-in-game testing with the exact mod versions in use.
+Target: Minecraft 1.21.1 / NeoForge. The integration was checked against
+Sable 2.0.7 source and ScalableLux's 1.21.1 lighting API. It still requires a
+successful local build and in-game testing with the exact mod versions in use.
